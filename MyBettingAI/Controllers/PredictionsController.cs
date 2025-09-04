@@ -13,11 +13,47 @@ namespace MyBettingAI.Controllers
     {
         private readonly ValueBetService _valueBetService;
         private readonly DataService _dataService;
+        private readonly FootballDataService _footballService;
 
-        public PredictionsController(ValueBetService valueBetService, DataService dataService)
+        // Inyectar FootballDataService en el constructor
+        public PredictionsController(ValueBetService valueBetService, DataService dataService, FootballDataService footballService)
         {
             _valueBetService = valueBetService;
             _dataService = dataService;
+            _footballService = footballService;
+        }
+
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new { message = "✅ API is working!", timestamp = DateTime.UtcNow });
+        }
+
+        [HttpPost("sync/{leagueApiId}")]
+        public async Task<ActionResult> SyncData(int leagueApiId)
+        {
+            try
+            {
+                // 1. Sincronizar liga
+                await _dataService.SyncLeaguesFromFootballDataAsync(_footballService);
+
+                // 2. Sincronizar equipos
+                var teamCount = await _dataService.SyncTeamsFromFootballDataAsync(_footballService, leagueApiId);
+
+                // 3. Sincronizar partidos
+                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2023);
+
+                return Ok(new
+                {
+                    message = "✅ Datos sincronizados correctamente",
+                    teams = teamCount,
+                    matches = matchCount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"❌ Error sincronizando datos: {ex.Message}");
+            }
         }
 
         [HttpGet("valuebets/{leagueId}")]
@@ -46,12 +82,6 @@ namespace MyBettingAI.Controllers
             {
                 return StatusCode(500, $"Error: {ex.Message}");
             }
-        }
-
-        [HttpGet("test")]
-        public IActionResult Test()
-        {
-            return Ok(new { message = "✅ API is working!", timestamp = DateTime.UtcNow });
         }
     }
 }

@@ -4,17 +4,17 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using MyBettingAI.Services;
 using System;
+using System.Threading.Tasks;
 
 namespace MyBettingAI
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args) // ← Cambiado a async Task
         {
             // Crear y configurar el host
             var host = CreateWebHostBuilder(args).Build();
 
-            // Inicializar base de datos
             using (var scope = host.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -23,6 +23,17 @@ namespace MyBettingAI
                     var dbContext = services.GetRequiredService<DatabaseContext>();
                     dbContext.InitializeDatabase();
                     Console.WriteLine("✅ Database initialized");
+
+                    // SINCRONIZAR DATOS AUTOMÁTICAMENTE AL INICIAR
+                    var dataService = services.GetRequiredService<DataService>();
+                    var footballService = new FootballDataService("f1e713f8666b42d8b29affe6c9ac478e");
+
+                    Console.WriteLine("🔄 Sincronizando datos de LaLiga...");
+                    //await dataService.SyncLeaguesFromFootballDataAsync(footballService);
+                    //var teamCount = await dataService.SyncTeamsFromFootballDataAsync(footballService, 2014);
+                    //var matchCount = await dataService.SyncHistoricalMatchesAsync(footballService, 2014, 2023);
+
+                    //Console.WriteLine($"✅ Datos sincronizados: {teamCount} equipos, {matchCount} partidos");
                 }
                 catch (Exception ex)
                 {
@@ -35,10 +46,11 @@ namespace MyBettingAI
             Console.WriteLine("   - GET /api/predictions/valuebets/{leagueId}");
             Console.WriteLine("   - GET /api/predictions/leagues");
             Console.WriteLine("   - GET /api/predictions/test");
+            Console.WriteLine("   - POST /api/predictions/sync/{leagueId}");
             Console.WriteLine("");
             Console.WriteLine("🔑 API Key configurada: f1e713f8666b42d8b29affe6c9ac478e");
 
-            host.Run();
+            await host.RunAsync(); // ← Cambiado a RunAsync
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
@@ -66,6 +78,8 @@ namespace MyBettingAI
             // Registrar otros servicios
             services.AddScoped<PredictionService>();
             services.AddScoped<ValueBetService>();
+
+            // Registrar FootballDataService con tu API key
             services.AddScoped<FootballDataService>(provider =>
                 new FootballDataService("f1e713f8666b42d8b29affe6c9ac478e"));
         }

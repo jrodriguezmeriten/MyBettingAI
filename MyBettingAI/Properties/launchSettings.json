@@ -2,11 +2,18 @@
   "profiles": {
     "MyBettingAI": {
       "commandName": "Project",
-      "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:62094;http://localhost:62095"
+     "applicationUrl": "http://localhost:5100;https://localhost:7100"
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:5100;https://localhost:7100",
+      "sslPort": 0
     }
   }
 }
