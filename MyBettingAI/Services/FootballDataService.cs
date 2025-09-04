@@ -53,6 +53,11 @@ namespace MyBettingAI.Services
         {
             return await GetAsync<MatchResponse>($"competitions/{competitionId}/matches");
         }
+
+        public async Task<MatchResponse> GetHistoricalMatchesAsync(int competitionId, int season = 2023)
+        {
+            return await GetAsync<MatchResponse>($"competitions/{competitionId}/matches?season={season}");
+        }
     }
 
     // Clases para la respuesta de la API
@@ -190,4 +195,6 @@ namespace MyBettingAI.Services
         [JsonProperty("away")]
         public int? Away { get; set; }
     }
-}
+
+
+    }
