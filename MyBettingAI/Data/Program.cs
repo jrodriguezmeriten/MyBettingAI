@@ -1,7 +1,8 @@
-﻿// Program.cs
-using Data;
+﻿using Data;
 using MyBettingAI.Models;
 using MyBettingAI.Services;
+using System;
+using System.Threading.Tasks;
 
 // Punto de entrada asíncrono
 await MainAsync();
@@ -13,13 +14,17 @@ static async Task MainAsync()
         Console.WriteLine("🔄 Initializing database...");
         var dbContext = new DatabaseContext();
         dbContext.InitializeDatabase();
-        Console.WriteLine("✅ Database ready!");
+
+        // LIMPIAR base de datos antes de empezar (Opción 2)
+        dbContext.CleanDatabase();
+        Console.WriteLine("✅ Database cleaned and ready!");
 
         // Crear el DataService
         var dataService = new DataService(dbContext.GetConnectionString());
 
-        // Insertar una liga de prueba
         Console.WriteLine("📝 Inserting test data...");
+
+        // Insertar una liga de prueba
         var leagueId = await dataService.InsertLeagueAsync(new League
         {
             Name = "LaLiga Santander",

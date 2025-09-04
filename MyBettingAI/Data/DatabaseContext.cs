@@ -117,5 +117,24 @@ namespace Data
                 command.ExecuteNonQuery(); // Ejecuta el script completo
             }
         }
+
+        public void CleanDatabase()
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+                    DELETE FROM Bets;
+                    DELETE FROM Predictions;
+                    DELETE FROM Odds;
+                    DELETE FROM Matches;
+                    DELETE FROM Teams;
+                    DELETE FROM Leagues;
+                ";
+                command.ExecuteNonQuery();
+                Console.WriteLine("🗑️ Base de datos limpiada");
+            }
+        }
     }
 }
