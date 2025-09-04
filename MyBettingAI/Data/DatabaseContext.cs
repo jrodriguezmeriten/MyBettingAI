@@ -13,6 +13,8 @@ namespace Data
             _connectionString = $"Data Source={databasePath}";
         }
 
+        public string GetConnectionString() => _connectionString;
+
         public void InitializeDatabase()
         {
             using (var connection = new SqliteConnection(_connectionString))
