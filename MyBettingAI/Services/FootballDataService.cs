@@ -16,6 +16,7 @@ namespace MyBettingAI.Services
             _httpClient = new HttpClient();
             _httpClient.BaseAddress = new Uri(BaseUrl);
             _httpClient.DefaultRequestHeaders.Add("X-Auth-Token", apiKey);
+            Console.WriteLine($"✅ FootballDataService initialized with API key: {apiKey.Substring(0, 8)}..."); // Muestra solo los primeros 8 caracteres por seguridad
         }
 
         // Método genérico para hacer peticiones
