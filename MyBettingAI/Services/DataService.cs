@@ -94,5 +94,79 @@ namespace MyBettingAI.Services
                     new { StartDate = startDate, EndDate = endDate });
             }
         }
+
+        // Añade estos métodos a tu DataService existente
+        public async Task<int> SyncLeaguesFromFootballDataAsync(FootballDataService footballService)
+        {
+            var competitions = await footballService.GetCompetitionsAsync();
+            int count = 0;
+
+            foreach (var competition in competitions)
+            {
+                var league = new League
+                {
+                    Name = competition.Name,
+                    Country = competition.Area.Name,
+                    ApiId = competition.Id
+                };
+
+                await InsertLeagueAsync(league);
+                count++;
+                Console.WriteLine($"✅ Liga sincronizada: {league.Name}");
+            }
+
+            return count;
+        }
+
+        public async Task<int> SyncTeamsFromFootballDataAsync(FootballDataService footballService, int leagueApiId)
+        {
+            // Buscar la liga en nuestra BD usando el ApiId
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var league = await connection.QueryFirstOrDefaultAsync<League>(
+                    "SELECT * FROM Leagues WHERE ApiId = @ApiId",
+                    new { ApiId = leagueApiId });
+
+                if (league == null)
+                {
+                    Console.WriteLine($"❌ No se encontró la liga con ApiId {leagueApiId}");
+                    return 0;
+                }
+
+                var standingResponse = await footballService.GetStandingsAsync(leagueApiId);
+                int count = 0;
+
+                if (standingResponse?.Standings?[0]?.Table != null)
+                {
+                    foreach (var teamStanding in standingResponse.Standings[0].Table)
+                    {
+                        var team = new Team
+                        {
+                            Name = teamStanding.Team.Name,
+                            LeagueId = league.Id, // ← ID interno de la BD
+                            ApiId = teamStanding.Team.Id,
+                            StrengthRating = CalculateStrengthRating(teamStanding)
+                        };
+
+                        await InsertTeamAsync(team);
+                        count++;
+                        Console.WriteLine($"✅ Equipo sincronizado: {team.Name} (Liga ID: {league.Id})");
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        // Función auxiliar para calcular rating de equipo
+        private double CalculateStrengthRating(TeamStanding standing)
+        {
+            // Fórmula simple basada en puntos y partidos jugados
+            double winRate = (double)standing.Won / standing.PlayedGames;
+            double pointsPerGame = (double)standing.Points / standing.PlayedGames;
+
+            return (winRate * 50) + (pointsPerGame * 2);
+        }
     }
 }
