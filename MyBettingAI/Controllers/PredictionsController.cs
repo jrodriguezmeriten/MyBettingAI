@@ -47,7 +47,7 @@ namespace MyBettingAI.Controllers
                 var teamCount = await _dataService.SyncTeamsFromFootballDataAsync(_footballService, leagueApiId);
 
                 // 4. Sincronizar partidos
-                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2020);
+                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2024);
 
                 return Ok(new
                 {
@@ -147,7 +147,7 @@ namespace MyBettingAI.Controllers
                 var teamCount = await _dataService.SyncTeamsFromFootballDataAsync(_footballService, leagueApiId);
 
                 // 3. Sincronizar partidos
-                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2020);
+                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2024);
 
                 return Ok(new
                 {
@@ -408,7 +408,7 @@ namespace MyBettingAI.Controllers
                 Console.WriteLine($"📊 Partidos obtenidos de API: {matchesResponse?.Matches?.Count ?? 0}");
 
                 // 2. Intentar sincronizar solo partidos
-                var syncCount = await _dataService.SyncHistoricalMatchesAsync(footballService, 2014, 2020);
+                var syncCount = await _dataService.SyncHistoricalMatchesAsync(footballService, 2014, 2024);
                 Console.WriteLine($"✅ Partidos sincronizados en BD: {syncCount}");
 
                 // 3. Verificar de nuevo la BD

@@ -224,7 +224,7 @@ namespace MyBettingAI.Services
         }
 
         // MÉTODO 10: Sincronizar partidos históricos
-        public async Task<int> SyncHistoricalMatchesAsync(FootballDataService footballService, int leagueApiId, int season = 2020)
+        public async Task<int> SyncHistoricalMatchesAsync(FootballDataService footballService, int leagueApiId, int season = 2024)
         {
             var league = await GetLeagueByApiIdAsync(leagueApiId);
             if (league == null)
