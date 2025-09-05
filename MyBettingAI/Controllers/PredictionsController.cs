@@ -36,18 +36,22 @@ namespace MyBettingAI.Controllers
         {
             try
             {
-                // 1. Sincronizar liga
-                await _dataService.SyncLeaguesFromFootballDataAsync(_footballService);
+                // 1. Limpiar base de datos primero
+                await _dataService.CleanDatabaseAsync();
 
-                // 2. Sincronizar equipos
+                // 2. Sincronizar liga
+                var leagueCount = await _dataService.SyncLeaguesFromFootballDataAsync(_footballService);
+
+                // 3. Sincronizar equipos
                 var teamCount = await _dataService.SyncTeamsFromFootballDataAsync(_footballService, leagueApiId);
 
-                // 3. Sincronizar partidos
+                // 4. Sincronizar partidos
                 var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2023);
 
                 return Ok(new
                 {
                     message = "✅ Datos sincronizados correctamente",
+                    leagues = leagueCount,
                     teams = teamCount,
                     matches = matchCount
                 });
@@ -127,6 +131,48 @@ namespace MyBettingAI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"❌ Odds API test failed: {ex.Message}");
+            }
+        }
+
+        [HttpGet("sync-get/{leagueApiId}")]
+        public async Task<ActionResult> SyncDataGet(int leagueApiId)
+        {
+            try
+            {
+                // 1. Sincronizar liga
+                await _dataService.SyncLeaguesFromFootballDataAsync(_footballService);
+
+                // 2. Sincronizar equipos
+                var teamCount = await _dataService.SyncTeamsFromFootballDataAsync(_footballService, leagueApiId);
+
+                // 3. Sincronizar partidos
+                var matchCount = await _dataService.SyncHistoricalMatchesAsync(_footballService, leagueApiId, 2023);
+
+                return Ok(new
+                {
+                    message = "✅ Datos sincronizados correctamente",
+                    teams = teamCount,
+                    matches = matchCount
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"❌ Error sincronizando datos: {ex.Message}");
+            }
+        }
+
+        [HttpPost("clean-database")]
+        public async Task<ActionResult> CleanDatabase()
+        {
+            try
+            {
+                // Método para limpiar la base de datos (debes implementarlo en DataService)
+                await _dataService.CleanDatabaseAsync();
+                return Ok(new { message = "✅ Base de datos limpiada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"❌ Error limpiando base de datos: {ex.Message}");
             }
         }
     }

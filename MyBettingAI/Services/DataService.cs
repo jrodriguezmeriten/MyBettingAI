@@ -28,11 +28,12 @@ namespace MyBettingAI.Services
 
                 foreach (var competition in competitions)
                 {
+                    // Verificar si la liga ya existe por ApiId
                     var existingLeague = await GetLeagueByApiIdAsync(competition.Id);
                     if (existingLeague != null)
                     {
                         Console.WriteLine($"⚠️ Liga ya existe: {competition.Name}");
-                        continue;
+                        continue; // Saltar si ya existe
                     }
 
                     var league = new League
@@ -121,6 +122,15 @@ namespace MyBettingAI.Services
             {
                 foreach (var teamStanding in standingResponse.Standings[0].Table)
                 {
+                    // VERIFICAR SI EL EQUIPO YA EXISTE antes de insertar
+                    var existingTeam = await GetTeamByApiIdAsync(teamStanding.Team.Id);
+
+                    if (existingTeam != null)
+                    {
+                        Console.WriteLine($"⚠️ Equipo ya existe: {teamStanding.Team.Name}");
+                        continue; // Saltar si ya existe
+                    }
+
                     var team = new Team
                     {
                         Name = teamStanding.Team.Name,
@@ -336,6 +346,25 @@ namespace MyBettingAI.Services
                     "SELECT * FROM Matches WHERE MatchDate BETWEEN @StartDate AND @EndDate",
                     new { StartDate = startDate, EndDate = endDate });
             }
+        }
+
+        public async Task CleanDatabaseAsync()
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                command.CommandText = @"
+            DELETE FROM Bets;
+            DELETE FROM Predictions;
+            DELETE FROM Odds;
+            DELETE FROM Matches;
+            DELETE FROM Teams;
+            DELETE FROM Leagues;
+        ";
+                await command.ExecuteNonQueryAsync();
+            }
+            Console.WriteLine("✅ Base de datos limpiada completamente");
         }
     }
 
