@@ -14,13 +14,15 @@ namespace MyBettingAI.Controllers
         private readonly ValueBetService _valueBetService;
         private readonly DataService _dataService;
         private readonly FootballDataService _footballService;
+        private readonly OddsApiService _oddsApiService; 
 
         // Inyectar FootballDataService en el constructor
-        public PredictionsController(ValueBetService valueBetService, DataService dataService, FootballDataService footballService)
+        public PredictionsController(ValueBetService valueBetService, DataService dataService, FootballDataService footballService, OddsApiService oddsApiService)
         {
             _valueBetService = valueBetService;
             _dataService = dataService;
             _footballService = footballService;
+            _oddsApiService = oddsApiService;
         }
 
         [HttpGet("test")]
@@ -61,15 +63,26 @@ namespace MyBettingAI.Controllers
         {
             try
             {
+                Console.WriteLine($"🔍 Searching value bets for league {leagueId}, minValue: {minValue}");
+
                 var valueBets = await _valueBetService.FindValueBetsAsync(leagueId, minValue);
 
                 if (!valueBets.Any())
-                    return Ok(new { message = "No value bets found", suggestions = "Try lowering minValue parameter" });
+                {
+                    Console.WriteLine("ℹ️ No value bets found with current parameters");
+                    return Ok(new
+                    {
+                        message = "No value bets found",
+                        suggestion = "Try lowering the minValue parameter or sync more data"
+                    });
+                }
 
+                Console.WriteLine($"✅ Found {valueBets.Count} value bets");
                 return Ok(valueBets);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Error in value bets: {ex.Message}");
                 return StatusCode(500, $"Error: {ex.Message}");
             }
         }
@@ -85,6 +98,35 @@ namespace MyBettingAI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("odds/test")]
+        public async Task<ActionResult> TestOddsApi()
+        {
+            try
+            {
+                // Probar directamente la API de odds
+                var sports = await _oddsApiService.GetSportsAsync();
+                var soccerOdds = await _oddsApiService.GetSoccerOddsAsync();
+
+                return Ok(new
+                {
+                    message = "✅ Odds API connected successfully",
+                    sportsCount = sports.Count,
+                    oddsCount = soccerOdds.Count,
+                    sampleMatches = soccerOdds.Take(3).Select(o => new
+                    {
+                        o.HomeTeam,
+                        o.AwayTeam,
+                        o.CommenceTime,
+                        Bookmakers = o.Bookmakers?.Count
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"❌ Odds API test failed: {ex.Message}");
             }
         }
     }
