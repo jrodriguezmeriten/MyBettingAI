@@ -12,6 +12,7 @@ namespace MyBettingAI.Services
     {
         private readonly string _connectionString;
 
+        // Constructor que recibe la connection string
         public DataService(string connectionString)
         {
             _connectionString = connectionString;
