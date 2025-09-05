@@ -62,6 +62,10 @@ namespace MyBettingAI.Controllers
             try
             {
                 var valueBets = await _valueBetService.FindValueBetsAsync(leagueId, minValue);
+
+                if (!valueBets.Any())
+                    return Ok(new { message = "No value bets found", suggestions = "Try lowering minValue parameter" });
+
                 return Ok(valueBets);
             }
             catch (Exception ex)

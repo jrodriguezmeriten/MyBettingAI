@@ -163,13 +163,51 @@ namespace MyBettingAI.Services
             }
         }
 
-        // MÉTODO 9: Calcular rating de equipo
-        private double CalculateStrengthRating(TeamStanding standing)
+        public async Task<IEnumerable<Team>> GetAllTeamsAsync()
         {
-            if (standing.PlayedGames == 0) return 50.0;
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                return await connection.QueryAsync<Team>("SELECT Id, Name, LeagueId, StrengthRating, ApiId FROM Teams");
+            }
+        }
 
-            double winRate = (double)standing.Won / standing.PlayedGames;
-            double pointsPerGame = (double)standing.Points / standing.PlayedGames;
+        // Y añade este método para caching
+        private List<Team> _cachedTeams;
+        private DateTime _lastCacheUpdate;
+
+        public async Task<IEnumerable<Team>> GetAllTeamsCachedAsync()
+        {
+            // Cache por 5 minutos para mejorar performance
+            if (_cachedTeams == null || DateTime.Now - _lastCacheUpdate > TimeSpan.FromMinutes(5))
+            {
+                _cachedTeams = (await GetAllTeamsAsync()).ToList();
+                _lastCacheUpdate = DateTime.Now;
+            }
+
+            return _cachedTeams;
+        }
+
+        public async Task<Team> FindTeamByNameAsync(string teamName)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                // Búsqueda flexible por nombre (case insensitive y parcial)
+                return await connection.QueryFirstOrDefaultAsync<Team>(
+                    "SELECT * FROM Teams WHERE Name LIKE @TeamName OR @TeamName LIKE '%' || Name || '%'",
+                    new { TeamName = $"%{teamName}%" });
+            }
+        }
+
+        // MÉTODO 9: Calcular rating de equipo
+        private float CalculateStrengthRating(TeamStanding standing)
+        {
+            if (standing.PlayedGames == 0) return 50.0F;
+
+            float winRate = (float)standing.Won / standing.PlayedGames;
+            float pointsPerGame = (float)standing.Points / standing.PlayedGames;
 
             return (winRate * 50) + (pointsPerGame * 2);
         }

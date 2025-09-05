@@ -65,23 +65,17 @@ namespace MyBettingAI
         {
             services.AddControllers();
 
-            // Registrar DatabaseContext
+            // Registrar servicios
             services.AddSingleton<DatabaseContext>();
-
-            // Registrar DataService con la connection string correctamente
-            services.AddScoped<DataService>(provider =>
-            {
-                var dbContext = provider.GetRequiredService<DatabaseContext>();
-                return new DataService(dbContext.GetConnectionString());
-            });
-
-            // Registrar otros servicios
+            services.AddScoped<DataService>();
             services.AddScoped<PredictionService>();
             services.AddScoped<ValueBetService>();
-
-            // Registrar FootballDataService con tu API key
             services.AddScoped<FootballDataService>(provider =>
                 new FootballDataService("f1e713f8666b42d8b29affe6c9ac478e"));
+
+            // Registrar The Odds API Service
+            services.AddScoped<OddsApiService>(provider =>
+                new OddsApiService("12cf3c3e8f80dd1964602e9b133077b5")); // ← Aquí tu key de The Odds API
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
