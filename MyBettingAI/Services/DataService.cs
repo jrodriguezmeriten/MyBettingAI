@@ -224,7 +224,7 @@ namespace MyBettingAI.Services
         }
 
         // MÉTODO 10: Sincronizar partidos históricos
-        public async Task<int> SyncHistoricalMatchesAsync(FootballDataService footballService, int leagueApiId, int season = 2023)
+        public async Task<int> SyncHistoricalMatchesAsync(FootballDataService footballService, int leagueApiId, int season = 2020)
         {
             var league = await GetLeagueByApiIdAsync(leagueApiId);
             if (league == null)
@@ -306,30 +306,63 @@ namespace MyBettingAI.Services
                 await connection.OpenAsync();
 
                 var sql = @"
-                SELECT 
-                    -- Features (asegurar que no sean NULL)
-                    COALESCE(ht.StrengthRating, 50.0) as HomeTeamStrength,
-                    COALESCE(at.StrengthRating, 50.0) as AwayTeamStrength,
-                    COALESCE((SELECT COUNT(*) FROM Matches WHERE HomeTeamId = m.HomeTeamId AND HomeScore > AwayScore AND MatchDate < m.MatchDate), 0) as HomeHomeWins,
-                    COALESCE((SELECT COUNT(*) FROM Matches WHERE AwayTeamId = m.AwayTeamId AND AwayScore > HomeScore AND MatchDate < m.MatchDate), 0) as AwayAwayWins,
-                    COALESCE((SELECT AVG(HomeScore) FROM Matches WHERE HomeTeamId = m.HomeTeamId AND MatchDate < m.MatchDate), 1.5) as AvgHomeGoals,
-                    COALESCE((SELECT AVG(AwayScore) FROM Matches WHERE AwayTeamId = m.AwayTeamId AND MatchDate < m.MatchDate), 1.2) as AvgAwayGoals,
-                    
-                    -- Label (resultado)
-                    CASE 
-                        WHEN m.HomeScore > m.AwayScore THEN 'HomeWin'
-                        WHEN m.HomeScore < m.AwayScore THEN 'AwayWin' 
-                        ELSE 'Draw'
-                    END as Label
-                    
-                FROM Matches m
-                JOIN Teams ht ON m.HomeTeamId = ht.Id
-                JOIN Teams at ON m.AwayTeamId = at.Id
-                WHERE m.LeagueId = @LeagueId 
-                AND m.HomeScore IS NOT NULL
-                AND m.AwayScore IS NOT NULL
-                ORDER BY m.MatchDate DESC
-                LIMIT 500";
+        SELECT 
+            -- Features básicas
+            COALESCE(ht.StrengthRating, 50.0) as HomeTeamStrength,
+            COALESCE(at.StrengthRating, 50.0) as AwayTeamStrength,
+    
+            -- Forma reciente (últimos 5 partidos)
+            (SELECT COUNT(*) FROM Matches m2 
+             WHERE m2.HomeTeamId = m.HomeTeamId 
+             AND m2.MatchDate < m.MatchDate 
+             AND m2.HomeScore > m2.AwayScore
+             ORDER BY m2.MatchDate DESC LIMIT 5) as HomeForm,  -- ← Nombre correcto
+    
+            (SELECT COUNT(*) FROM Matches m2 
+             WHERE m2.AwayTeamId = m.AwayTeamId 
+             AND m2.MatchDate < m.MatchDate 
+             AND m2.AwayScore > m2.HomeScore
+             ORDER BY m2.MatchDate DESC LIMIT 5) as AwayForm,  -- ← Nombre correcto
+            
+            -- 2. Potencia ofensiva/defensiva
+            (SELECT AVG(HomeScore) FROM Matches 
+             WHERE HomeTeamId = m.HomeTeamId 
+             AND MatchDate < m.MatchDate) as HomeAttackStrength,
+             
+            (SELECT AVG(AwayScore) FROM Matches 
+             WHERE AwayTeamId = m.AwayTeamId 
+             AND MatchDate < m.MatchDate) as AwayAttackStrength,
+             
+            (SELECT AVG(AwayScore) FROM Matches 
+             WHERE HomeTeamId = m.HomeTeamId 
+             AND MatchDate < m.MatchDate) as HomeDefenseWeakness,
+             
+            (SELECT AVG(HomeScore) FROM Matches 
+             WHERE AwayTeamId = m.AwayTeamId 
+             AND MatchDate < m.MatchDate) as AwayDefenseWeakness,
+            
+            -- 3. Historial entre equipos
+            (SELECT COUNT(*) FROM Matches m2 
+             WHERE ((m2.HomeTeamId = m.HomeTeamId AND m2.AwayTeamId = m.AwayTeamId)
+                 OR (m2.HomeTeamId = m.AwayTeamId AND m2.AwayTeamId = m.HomeTeamId))
+             AND m2.MatchDate < m.MatchDate
+             AND m2.HomeScore = m2.AwayScore) as HistoricalDraws,
+            
+            -- Label (resultado)
+            CASE 
+                WHEN m.HomeScore > m.AwayScore THEN 'HomeWin'
+                WHEN m.HomeScore < m.AwayScore THEN 'AwayWin' 
+                ELSE 'Draw'
+            END as Label
+            
+        FROM Matches m
+        JOIN Teams ht ON m.HomeTeamId = ht.Id
+        JOIN Teams at ON m.AwayTeamId = at.Id
+        WHERE m.LeagueId = @LeagueId 
+        AND m.HomeScore IS NOT NULL
+        AND m.AwayScore IS NOT NULL
+        ORDER BY m.MatchDate DESC
+        LIMIT 1000";
 
                 var matches = await connection.QueryAsync<TrainingFeatures>(sql, new { LeagueId = leagueId });
                 return matches.ToList();
@@ -371,12 +404,24 @@ namespace MyBettingAI.Services
     // CLASE para los datos de entrenamiento (debe estar dentro del namespace)
     public class TrainingFeatures
     {
+        // Features básicas
         public float HomeTeamStrength { get; set; }
         public float AwayTeamStrength { get; set; }
-        public float HomeHomeWins { get; set; }
-        public float AwayAwayWins { get; set; }
-        public float AvgHomeGoals { get; set; }
-        public float AvgAwayGoals { get; set; }
+
+        // Features de forma reciente
+        public float HomeForm { get; set; }          // ← Nombre correcto
+        public float AwayForm { get; set; }          // ← Nombre correcto
+
+        // Features ofensivas/defensivas  
+        public float HomeAttackStrength { get; set; }
+        public float AwayAttackStrength { get; set; }
+        public float HomeDefenseWeakness { get; set; }
+        public float AwayDefenseWeakness { get; set; }
+
+        // Feature histórica
+        public float HistoricalDraws { get; set; }
+
+        // Label
         public string Label { get; set; }
     }
 }
