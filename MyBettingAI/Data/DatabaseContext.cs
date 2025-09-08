@@ -133,7 +133,7 @@ namespace Data
                     DELETE FROM Leagues;
                 ";
                 command.ExecuteNonQuery();
-                Console.WriteLine("🗑️ Base de datos limpiada");
+                Console.WriteLine("Base de datos reseteada");
             }
         }
     }

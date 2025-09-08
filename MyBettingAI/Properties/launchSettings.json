@@ -3,14 +3,18 @@
     "MyBettingAI": {
       "commandName": "Project",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ApiKeys__FootballData": "f1e713f8666b42d8b29affe6c9ac478e",
+        "ApiKeys__OddsApi": "12cf3c3e8f80dd1964602e9b133077b5"
       },
       "applicationUrl": "http://localhost:5100;https://localhost:7100"
     },
     "IIS Express": {
       "commandName": "IISExpress",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ApiKeys__FootballData": "f1e713f8666b42d8b29affe6c9ac478e",
+        "ApiKeys__OddsApi": "12cf3c3e8f80dd1964602e9b133077b5"
       },
       "use64Bit": true
     }
